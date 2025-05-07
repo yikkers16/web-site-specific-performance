@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Infinite Zoom Layers</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background-color: black;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    #zoom-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease-out;
+      transform-origin: center;
+    }
+
+    .layer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 4vw;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.3s ease-out;
+      pointer-events: none;
+    }
+
+    .visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+<div id="zoom-container"></div>
+
+<script>
+  const container = document.getElementById('zoom-container');
+  const objectNames = [
+    "Atom", "Molecule", "Cell", "Organ", "Human", "House", "City", "Planet", "Solar System", "Galaxy", "Universe"
+  ];
+
+  let zoomLevel = 0;
+  let mode = 'normal'; // 'normal', 'morse', 'braille'
+
+  const morseMap = {
+    A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.',
+    G: '--.', H: '....', I: '..', J: '.---', K: '-.-', L: '.-..',
+    M: '--', N: '-.', O: '---', P: '.--.', Q: '--.-', R: '.-.',
+    S: '...', T: '-', U: '..-', V: '...-', W: '.--', X: '-..-',
+    Y: '-.--', Z: '--..',
+    0: '-----', 1: '.----', 2: '..---', 3: '...--', 4: '....-',
+    5: '.....', 6: '-....', 7: '--...', 8: '---..', 9: '----.',
+    ' ': ' / '
+  };
+
+  const brailleMap = {
+    A: '⠁', B: '⠃', C: '⠉', D: '⠙', E: '⠑', F: '⠋',
+    G: '⠛', H: '⠓', I: '⠊', J: '⠚', K: '⠅', L: '⠇',
+    M: '⠍', N: '⠝', O: '⠕', P: '⠏', Q: '⠟', R: '⠗',
+    S: '⠎', T: '⠞', U: '⠥', V: '⠧', W: '⠺', X: '⠭',
+    Y: '⠽', Z: '⠵',
+    0: '⠴', 1: '⠂', 2: '⠆', 3: '⠒', 4: '⠲',
+    5: '⠢', 6: '⠖', 7: '⠶', 8: '⠦', 9: '⠔',
+    ' ': '⠀'
+  };
+
+  function getObjectName(level) {
+    if (level < 0) return `Subatomic Level ${Math.abs(level)}`;
+    return objectNames[level] || `Layer ${level}`;
+  }
+
+  function toMorse(text) {
+    return text.toUpperCase().split('').map(c => morseMap[c] || '?').join(' ');
+  }
+
+  function toBraille(text) {
+    return text.toUpperCase().split('').map(c => brailleMap[c] || '?').join('');
+  }
+
+  function translate(text) {
+    if (mode === 'morse') return toMorse(text);
+    if (mode === 'braille') return toBraille(text);
+    return text;
+  }
+
+  function createLayer(name) {
+    const layer = document.createElement('div');
+    layer.className = 'layer';
+    layer.textContent = translate(name);
+    return layer;
+  }
+
+  let currentLayer = createLayer(getObjectName(zoomLevel));
+  container.appendChild(currentLayer);
+  requestAnimationFrame(() => currentLayer.classList.add('visible'));
+
+  function updateLayer(delta) {
+    zoomLevel += delta;
+    zoomLevel = Math.max(-1000, Math.min(1000, zoomLevel));
+
+    const scale = Math.pow(0.95, zoomLevel);
+
+    // Reset if zoomed out too far or zoomed in too much
+    if (scale < 0.05 || scale > 20) {
+      zoomLevel = 0;
+      container.style.transform = 'scale(1)';
+      container.querySelectorAll('.layer').forEach(layer => container.removeChild(layer));
+      currentLayer = createLayer(getObjectName(zoomLevel));
+      container.appendChild(currentLayer);
+      requestAnimationFrame(() => currentLayer.classList.add('visible'));
+      return;
+    }
+
+    container.style.transform = `scale(${scale})`;
+
+    const newText = getObjectName(zoomLevel);
+    const newLayer = createLayer(newText);
+    container.appendChild(newLayer);
+    requestAnimationFrame(() => newLayer.classList.add('visible'));
+
+    currentLayer.classList.remove('visible');
+
+    setTimeout(() => {
+      container.querySelectorAll('.layer').forEach(layer => {
+        if (!layer.classList.contains('visible')) container.removeChild(layer);
+      });
+    }, 400);
+
+    currentLayer = newLayer;
+  }
+
+  window.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 1 : -1;
+    updateLayer(delta);
+  }, { passive: false });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp') updateLayer(1);
+    if (e.key === 'ArrowDown') updateLayer(-1);
+  });
+
+  window.addEventListener('click', (e) => {
+    if (e.button !== 0) return;
+    mode = (mode === 'morse') ? 'normal' : 'morse';
+    if (currentLayer) currentLayer.textContent = translate(getObjectName(zoomLevel));
+  });
+
+  window.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    mode = (mode === 'braille') ? 'normal' : 'braille';
+    if (currentLayer) currentLayer.textContent = translate(getObjectName(zoomLevel));
+  });
+</script>
+
+</body>
+</html>

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Infinite Zoom Layers</title>
+  <meta charset="UTF-8" />
+  <title>If you were a speck</title>
   <style>
     html, body {
       margin: 0;
@@ -19,7 +19,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.2s ease-out;
       transform-origin: center;
     }
 
@@ -32,12 +31,75 @@
       font-size: 4vw;
       text-align: center;
       opacity: 0;
-      transition: opacity 0.3s ease-out;
       pointer-events: none;
+      user-select: none;
     }
 
     .visible {
       opacity: 1;
+    }
+
+    #help-bar {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 10;
+    }
+
+    .help-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .button-row {
+      display: inline-flex;
+      gap: 10px;
+    }
+
+    .help-button {
+      background-color: #222;
+      color: white;
+      border: 1px solid #555;
+      padding: 8px 12px;
+      font-size: 14px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .help-button:hover {
+      background-color: #444;
+    }
+
+    #help-popup-shared {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 5px;
+      background: #111;
+      color: white;
+      border: 1px solid #555;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 4px;
+      white-space: normal;
+      text-align: left;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-wrap: break-word;
+      z-index: 20;
+    }
+
+    .help-container:hover #help-popup-shared {
+      display: block;
+    }
+
+    #warp-tracker {
+      margin-top: 8px;
+      color: #888;
+      font-size: 14px;
+      font-family: monospace;
     }
   </style>
 </head>
@@ -45,102 +107,107 @@
 
 <div id="zoom-container"></div>
 
+<div id="help-bar">
+  <div class="help-container">
+    <div class="button-row">
+      <button class="help-button"
+              onmouseover="showPopup('Use the mouse scroll wheel to zoom in and out through layers.')"
+              onmouseout="hidePopup()">About</button>
+      <button class="help-button"
+              onmouseover="showPopup('Use the Up and Down arrow keys to zoom through the layers manually.')"
+              onmouseout="hidePopup()">Controls</button>
+    </div>
+    <div id="help-popup-shared">Helper text</div>
+    <div id="warp-tracker">Traverses: 0</div>
+  </div>
+</div>
+
 <script>
   const container = document.getElementById('zoom-container');
   const objectNames = [
-    "Atom", "Molecule", "Cell", "Organ", "Human", "House", "City", "Planet", "Solar System", "Galaxy", "Universe"
+    "Quark", "Proton / Neutron / Electron", "Atom", "Molecule", "Macromolecule",
+    "Organelle", "Cell", "Tissue", "Organ", "Organ System", "Human", "Group",
+    "House / Dwelling", "Neighborhood", "City", "Region", "Nation-State",
+    "Continent", "Planet", "Moon", "Solar System", "Star Cluster", "Galaxy",
+    "Galactic Cluster", "Supercluster", "Cosmic Web", "Observable Universe",
+    "Entire Universe", "Multiverse (theoretical)", "Mathematical / Informational Substrate"
   ];
 
-  let zoomLevel = 0;
-  let mode = 'normal'; // 'normal', 'morse', 'braille'
+  let layerIndex = 0;
+  let mode = 'normal';
+  let warpCount = 0;
+  let netSteps = 0;
+  const totalLayers = objectNames.length;
+  const warpDisplay = document.getElementById('warp-tracker');
+  const popup = document.getElementById('help-popup-shared');
+  let currentLayer = null;
 
-  const morseMap = {
-    A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.',
-    G: '--.', H: '....', I: '..', J: '.---', K: '-.-', L: '.-..',
-    M: '--', N: '-.', O: '---', P: '.--.', Q: '--.-', R: '.-.',
-    S: '...', T: '-', U: '..-', V: '...-', W: '.--', X: '-..-',
-    Y: '-.--', Z: '--..',
-    0: '-----', 1: '.----', 2: '..---', 3: '...--', 4: '....-',
-    5: '.....', 6: '-....', 7: '--...', 8: '---..', 9: '----.',
-    ' ': ' / '
-  };
-
-  const brailleMap = {
-    A: '⠁', B: '⠃', C: '⠉', D: '⠙', E: '⠑', F: '⠋',
-    G: '⠛', H: '⠓', I: '⠊', J: '⠚', K: '⠅', L: '⠇',
-    M: '⠍', N: '⠝', O: '⠕', P: '⠏', Q: '⠟', R: '⠗',
-    S: '⠎', T: '⠞', U: '⠥', V: '⠧', W: '⠺', X: '⠭',
-    Y: '⠽', Z: '⠵',
-    0: '⠴', 1: '⠂', 2: '⠆', 3: '⠒', 4: '⠲',
-    5: '⠢', 6: '⠖', 7: '⠶', 8: '⠦', 9: '⠔',
-    ' ': '⠀'
-  };
-
-  function getObjectName(level) {
-    if (level < 0) return `Subatomic Level ${Math.abs(level)}`;
-    return objectNames[level] || `Layer ${level}`;
+  function showPopup(text) {
+    popup.textContent = text;
+    popup.style.display = 'block';
   }
 
-  function toMorse(text) {
-    return text.toUpperCase().split('').map(c => morseMap[c] || '?').join(' ');
+  function hidePopup() {
+    popup.style.display = 'none';
   }
 
-  function toBraille(text) {
-    return text.toUpperCase().split('').map(c => brailleMap[c] || '?').join('');
-  }
-
-  function translate(text) {
-    if (mode === 'morse') return toMorse(text);
-    if (mode === 'braille') return toBraille(text);
-    return text;
+  function getObjectName(index) {
+    return objectNames[index % objectNames.length];
   }
 
   function createLayer(name) {
     const layer = document.createElement('div');
     layer.className = 'layer';
-    layer.textContent = translate(name);
+    layer.textContent = name;
     return layer;
   }
 
-  let currentLayer = createLayer(getObjectName(zoomLevel));
-  container.appendChild(currentLayer);
-  requestAnimationFrame(() => currentLayer.classList.add('visible'));
+  function updateWarpCount(delta) {
+    netSteps += delta;
+    if (netSteps >= totalLayers) {
+      warpCount++;
+      netSteps = 0;
+    } else if (netSteps <= -totalLayers) {
+      warpCount--;
+      netSteps = 0;
+    }
+    warpDisplay.textContent = `Traverses: ${warpCount}`;
+  }
 
   function updateLayer(delta) {
-    zoomLevel += delta;
-    zoomLevel = Math.max(-1000, Math.min(1000, zoomLevel));
+    updateWarpCount(delta);
+    layerIndex = (layerIndex + delta + totalLayers) % totalLayers;
 
-    const scale = Math.pow(0.95, zoomLevel);
-
-    // Reset if zoomed out too far or zoomed in too much
-    if (scale < 0.05 || scale > 20) {
-      zoomLevel = 0;
-      container.style.transform = 'scale(1)';
-      container.querySelectorAll('.layer').forEach(layer => container.removeChild(layer));
-      currentLayer = createLayer(getObjectName(zoomLevel));
-      container.appendChild(currentLayer);
-      requestAnimationFrame(() => currentLayer.classList.add('visible'));
-      return;
-    }
-
+    const scaleBase = 0.8;
+    const midIndex = Math.floor(totalLayers / 2);
+    const scale = Math.pow(scaleBase, midIndex - layerIndex);
     container.style.transform = `scale(${scale})`;
 
-    const newText = getObjectName(zoomLevel);
-    const newLayer = createLayer(newText);
+    const newLayer = createLayer(getObjectName(layerIndex));
     container.appendChild(newLayer);
     requestAnimationFrame(() => newLayer.classList.add('visible'));
 
-    currentLayer.classList.remove('visible');
+    if (currentLayer) {
+      currentLayer.classList.remove('visible');
+    }
 
     setTimeout(() => {
       container.querySelectorAll('.layer').forEach(layer => {
-        if (!layer.classList.contains('visible')) container.removeChild(layer);
+        if (!layer.classList.contains('visible')) {
+          container.removeChild(layer);
+        }
       });
     }, 400);
 
     currentLayer = newLayer;
   }
 
+  // Initialize the first layer
+  currentLayer = createLayer(getObjectName(layerIndex));
+  container.appendChild(currentLayer);
+  requestAnimationFrame(() => currentLayer.classList.add('visible'));
+
+  // User input handling
   window.addEventListener('wheel', (e) => {
     e.preventDefault();
     const delta = e.deltaY < 0 ? 1 : -1;
@@ -154,14 +221,11 @@
 
   window.addEventListener('click', (e) => {
     if (e.button !== 0) return;
-    mode = (mode === 'morse') ? 'normal' : 'morse';
-    if (currentLayer) currentLayer.textContent = translate(getObjectName(zoomLevel));
-  });
-
-  window.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    mode = (mode === 'braille') ? 'normal' : 'braille';
-    if (currentLayer) currentLayer.textContent = translate(getObjectName(zoomLevel));
+    mode = (mode === 'normal') ? 'morse' :
+           (mode === 'morse') ? 'braille' : 'normal';
+    if (currentLayer) {
+      currentLayer.textContent = getObjectName(layerIndex);
+    }
   });
 </script>
 

@@ -1,155 +1,156 @@
 /*Degheest by Ange Degheest, Camille Depalle, Eugénie Bidaut, Luna Delabre, Mandy Elbé, May Jolivet, Oriane Charvieux, Benjamin Gomez, Justine Herbel. Distributed by velvetyne.fr.*/
-    @font-face {
+@font-face {
     font-family: 'Abordage Regular';
     src: url('fonts/Abordage-Regular.woff') format('woff'), url('fonts/Abordage-Regular.woff2') format('woff2');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
-    }
+}
 
-    /*League Mono by Tyler Finck */
-    @font-face {
+/*League Mono by Tyler Finck */
+@font-face {
     font-family: 'LeagueMono-Light';
     src: url('fonts/LeagueMono-Light.woff') format('woff'), url('fonts/LeagueMono-Light.woff2') format('woff2');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
-    }    
-   
-    html, body {
-      margin: 0;
-      height: 100%;
-      background-color: #daffaa;
-      overflow: hidden;
-      font-family: 'Abordage Regular';
-    }
+}    
 
-    #zoom-container {
-      width: 100vw;
-      height: 100vh;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transform-origin: center;
-    }
+html, body {
+    margin: 0;
+    height: 100%;
+    background-color: #daffaa;
+    overflow: hidden;
+    font-family: 'Abordage Regular';
+}
 
-    .layer {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: #ee3636;
-      font-size: 4vw;
-      text-align: center;
-      opacity: 0;
-      pointer-events: none;
-      user-select: none;
-    }
+#zoom-container {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-origin: center;
+}
 
-    .visible {
-      opacity: 1;
-    }
+.layer {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ee3636;
+    font-size: 4vw;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    user-select: none;
+}
 
-    #help-bar {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 10;
-    }
+.visible {
+    opacity: 1;
+}
 
-    .help-container {
-      position: relative;
-      display: inline-block;
-    }
+#help-bar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+}
 
-    .button-row {
-      display: inline-flex;
-      gap: 10px;
-    }
+.help-container {
+    position: relative;
+    display: inline-block;
+}
 
-    .help-button {
-      background-color: #ee3636;
-      color: white;
-      border: transparent;
-      padding: 8px 12px;
-      font-size: 14px;
-      border-radius: 5px;
-      cursor: pointer;
-      user-select: none;
-    }
+.button-row {
+    display: inline-flex;
+    gap: 10px;
+}
 
-    .help-button:hover {
-      background-color: #c87f0d;
-    }
+.help-button {
+    background-color: #ee3636;
+    color: white;
+    border: transparent;
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    user-select: none;
+}
 
-    #help-popup-shared {
-      display: none;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      margin-top: 5px;
-      background: #c87f0d;
-      border: transparent;
-      padding: 10px;
-      font-size: 14px;
-      border-radius: 4px;
-      white-space: normal;
-      text-align: justify;
-      width: 100%;
-      box-sizing: border-box;
-      overflow-wrap: break-word;
-      z-index: 20;
-    }
+.help-button:hover {
+    background-color: #c87f0d;
+    font-size: 14px;
+}
 
-    .help-popup-base {
-      color: white;
-      user-select: none;      
-    }
+#help-popup-shared {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 5px;
+    background: #c87f0d;
+    border: transparent;
+    padding: 10px;
+    font-size: 13px;
+    border-radius: 4px;
+    white-space: normal;
+    text-align: justify;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    z-index: 20;
+}
 
-    #warp-tracker {
-      margin-top: 8px;
-      color: #ee3636;
-      font-family: 'LeagueMono-Light';
-      font-size: 12px;
-      user-select: none;
-    }
+.help-popup-base {
+    color: white;
+    user-select: none;      
+}
 
-    #current-object-display {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      color: #ee3636;
-      font-size: 12px;
-      z-index: 10;
-      background: #ffffff;
-      opacity: 75%;
-      padding: 4px 8px;
-      border-radius: 4px;
-      user-select: none;
-      font-family: 'LeagueMono-Light';
-    }
+#warp-tracker {
+    margin-top: 8px;
+    color: #ee3636;
+    font-family: 'LeagueMono-Light';
+    font-size: 12px;
+    user-select: none;
+}
 
-    #traversal-history-display {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      color: #e5910e;
-      font-size: 24px;
-      font-family: 'Abordage Regular';
-      z-index: 10;
-      background: transparent;
-      padding: 4px 8px;
-      border-radius: 4px;
-      user-select: none;
-      white-space: pre-wrap;
-      overflow-wrap: break-word;
-      word-break: break-word;
-      max-width: 85vw;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
+#current-object-display {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    color: #ee3636;
+    font-size: 12px;
+    z-index: 10;
+    background: #ffffff;
+    opacity: 75%;
+    padding: 4px 8px;
+    border-radius: 4px;
+    user-select: none;
+    font-family: 'LeagueMono-Light';
+}
 
-    #traversal-history-display::-webkit-scrollbar {
-      display: none;
-    }
+#traversal-history-display {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: #e5910e;
+    font-size: 24px;
+    font-family: 'Abordage Regular';
+    z-index: 10;
+    background: transparent;
+    padding: 4px 8px;
+    border-radius: 4px;
+    user-select: none;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    max-width: 85vw;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+#traversal-history-display::-webkit-scrollbar {
+    display: none;
+}

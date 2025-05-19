@@ -2,14 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>If you were a speck</title>
+  <title>If I Were a Speck</title>
   <style>
+    /*Degheest by Ange Degheest, Camille Depalle, Eugénie Bidaut, Luna Delabre, Mandy Elbé, May Jolivet, Oriane Charvieux, Benjamin Gomez, Justine Herbel. Distributed by velvetyne.fr.*/
+    @font-face {
+    font-family: 'Abordage Regular';
+    src: url('fonts/Abordage-Regular.woff') format('woff'), url('fonts/Abordage-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+    }
+   
     html, body {
       margin: 0;
       height: 100%;
-      background-color: black;
+      background-color: #daffaa;
       overflow: hidden;
-      font-family: Arial, sans-serif;
+      font-family: 'Abordage Regular';
     }
 
     #zoom-container {
@@ -27,7 +36,7 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      color: white;
+      color: #ee3636;
       font-size: 4vw;
       text-align: center;
       opacity: 0;
@@ -57,17 +66,18 @@
     }
 
     .help-button {
-      background-color: #222;
+      background-color: #ee3636;
       color: white;
-      border: 1px solid #555;
+      border: transparent;
       padding: 8px 12px;
       font-size: 14px;
       border-radius: 5px;
       cursor: pointer;
+      user-select: none;
     }
 
     .help-button:hover {
-      background-color: #444;
+      background-color: #c87f0d;
     }
 
     #help-popup-shared {
@@ -76,30 +86,62 @@
       top: 100%;
       left: 0;
       margin-top: 5px;
-      background: #111;
-      color: white;
-      border: 1px solid #555;
+      background: #c87f0d;
+      border: transparent;
       padding: 10px;
       font-size: 14px;
       border-radius: 4px;
       white-space: normal;
-      text-align: left;
+      text-align: justify;
       width: 100%;
-      max-width: 100%;
       box-sizing: border-box;
       overflow-wrap: break-word;
       z-index: 20;
     }
 
-    .help-container:hover #help-popup-shared {
-      display: block;
+    .help-popup-base {
+      color: white;
+      user-select: none;
     }
 
     #warp-tracker {
       margin-top: 8px;
-      color: #888;
-      font-size: 14px;
+      color: #ee3636;
       font-family: monospace;
+      font-size: 14px;
+      user-select: none;
+    }
+
+    #current-object-display {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      color: #ee3636;
+      font-size: 14px;
+      z-index: 10;
+      background: #ffffff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      user-select: none;
+      font-family: monospace;
+    }
+
+    #traversal-history-display {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: #e5910e;
+      font-size: 24px;
+      font-family: monospace;
+      z-index: 10;
+      background: transparent;
+      padding: 4px 8px;
+      border-radius: 4px;
+      user-select: none;
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      max-width: 85vw;
     }
   </style>
 </head>
@@ -110,124 +152,253 @@
 <div id="help-bar">
   <div class="help-container">
     <div class="button-row">
-      <button class="help-button"
-              onmouseover="showPopup('Use the mouse scroll wheel to zoom in and out through layers.')"
+      <button class="help-button translatable"
+              data-original-text="About"
+              onmouseover="showPopup('<i>If I Were a Speck</i> draws on Chaos Theory to explore the underlying order within the seeming chaos of the world. This site invites a visceral experience of traversing a multiverse of scales—across space, time, and language. While the universe may appear arbitrary and random, our embodied interactions with it can reveal deep patterns of order.')"
               onmouseout="hidePopup()">About</button>
-      <button class="help-button"
-              onmouseover="showPopup('Use the Up and Down arrow keys to zoom through the layers manually.')"
-              onmouseout="hidePopup()">Controls</button>
+      <button class="help-button translatable"
+              data-original-text="Navigate"
+              onmouseover="showPopup('<b>Click</b> = Transcribe; <b>Scroll</b> ↕ = In / Out; <b>Space</b> = Pattern')"
+              onmouseout="hidePopup()">Navigate</button>
     </div>
-    <div id="help-popup-shared">Helper text</div>
+    <div id="help-popup-shared" class="help-popup-base translatable"></div>
     <div id="warp-tracker">Traverses: 0</div>
   </div>
 </div>
 
+<div id="current-object-display"></div>
+<div id="traversal-history-display"></div>
+
 <script>
+  function invertColor(hex) {
+    if (hex.indexOf('#') === 0) hex = hex.slice(1);
+    if (hex.length === 3) {
+      hex = hex.split('').map(x => x + x).join('');
+    }
+    const r = (255 - parseInt(hex.slice(0, 2), 16)).toString(16).padStart(2, '0');
+    const g = (255 - parseInt(hex.slice(2, 4), 16)).toString(16).padStart(2, '0');
+    const b = (255 - parseInt(hex.slice(4, 6), 16)).toString(16).padStart(2, '0');
+    return `#${r}${g}${b}`;
+  }
+
+  let traversalHistory = '';
+  let stepCount = 0;
+  const modes = ['morse', 'english', 'german', 'french', 'spanish'];
+  let modeIndex = 0;
+
   const container = document.getElementById('zoom-container');
-  const objectNames = [
-    "Quark", "Proton / Neutron / Electron", "Atom", "Molecule", "Macromolecule",
-    "Organelle", "Cell", "Tissue", "Organ", "Organ System", "Human", "Group",
-    "House / Dwelling", "Neighborhood", "City", "Region", "Nation-State",
-    "Continent", "Planet", "Moon", "Solar System", "Star Cluster", "Galaxy",
-    "Galactic Cluster", "Supercluster", "Cosmic Web", "Observable Universe",
-    "Entire Universe", "Multiverse (theoretical)", "Mathematical / Informational Substrate"
+  const popup = document.getElementById('help-popup-shared');
+  const warpDisplay = document.getElementById('warp-tracker');
+  const objectDisplay = document.getElementById('current-object-display');
+  const traversalDisplay = document.getElementById('traversal-history-display');
+  traversalDisplay.style.display = 'none';
+
+  const objectTranslations = {
+    english: ["Quark", "Electron", "Proton", "Neutron", "Atom", "Molecule", "Macromolecule", "Organelle", "Cell", "Tissue", "Organ", "Organ System", "Human", "Group", "Dwelling", "Neighborhood", "City", "Region", "Nation State", "Continent", "Planet", "Moon", "Solar System", "Star Cluster", "Galaxy", "Galactic Cluster", "Supercluster", "Cosmic Web", "Observable Universe", "Entire Universe", "Adjacent Universe", "Mathematical Substrate"],
+    german: ["Quark", "Elektron", "Proton", "Neutron", "Atom", "Molekül", "Makromolekül", "Organell", "Zelle", "Gewebe", "Organ", "Organsystem", "Mensch", "Gruppe", "Behausung", "Nachbarschaft", "Stadt", "Region", "Nationalstaat", "Kontinent", "Planet", "Mond", "Sonnensystem", "Sternhaufen", "Galaxie", "Galaxienhaufen", "Superhaufen", "Kosmisches Netz", "Beobachtbares Universum", "Gesamtes Universum", "Angrenzendes Universum", "Mathematisches Substrat"],
+    french: ["Quark", "Électron", "Proton", "Neutron", "Atome", "Molécule", "Macromolécule", "Organite", "Cellule", "Tissu", "Organe", "Système d'organes", "Humain", "Groupe", "Habitation", "Quartier", "Ville", "Région", "État-nation", "Continent", "Planète", "Lune", "Système solaire", "Amas d'étoiles", "Galaxie", "Amas galactique", "Superamas", "Toile cosmique", "Univers observable", "Univers entier", "Univers adjacent", "Substrat mathématique"],
+    spanish: ["Quark", "Electrón", "Protón", "Neutrón", "Átomo", "Molécula", "Macromolécula", "Orgánulo", "Célula", "Tejido", "Órgano", "Sistema de órganos", "Humano", "Grupo", "Vivienda", "Vecindario", "Ciudad", "Región", "Estado nación", "Continente", "Planeta", "Luna", "Sistema solar", "Cúmulo estelar", "Galaxia", "Cúmulo galáctico", "Supercúmulo", "Red cósmica", "Universo observable", "Universo completo", "Universo adyacente", "Sustrato matemático"]
+  };
+
+  const labelTranslations = {
+    english: { about: "About", navigate: "Navigate" },
+    german: { about: "Über", navigate: "Navigieren" },
+    french: { about: "À propos", navigate: "Naviguer" },
+    spanish: { about: "Acerca de", navigate: "Navegar" }
+  };
+
+  const morseMap = {
+    A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.',
+    G: '--.', H: '....', I: '..', J: '.---', K: '-.-', L: '.-..',
+    M: '--', N: '-.', O: '---', P: '.--.', Q: '--.-', R: '.-.',
+    S: '...', T: '-', U: '..-', V: '...-', W: '.--', X: '-..-',
+    Y: '-.--', Z: '--..',
+    0: '-----', 1: '.----', 2: '..---', 3: '...--', 4: '....-',
+    5: '.....', 6: '-....', 7: '--...', 8: '---..', 9: '----.',
+    ' ': ' / '
+  };
+
+  const colorThemes = [
+    { background: "#daffaa", text: "#ee3636" },
+    { background: "#fff3b0", text: "#9a17a9" },
+    { background: "#ffdede", text: "#0ad15c" },
+    { background: "#ccfbff", text: "#ff6e16" },
+    { background: "#e9f5db", text: "#f1458b" }
   ];
 
-  let layerIndex = 0;
-  let mode = 'normal';
-  let warpCount = 0;
-  let netSteps = 0;
-  const totalLayers = objectNames.length;
-  const warpDisplay = document.getElementById('warp-tracker');
-  const popup = document.getElementById('help-popup-shared');
+  let currentTheme = colorThemes[0];
+  let themeCycleCount = 0;
+  let layersVisitedSinceLastCycle = new Set();
+  let layerIndex = objectTranslations.english.indexOf("Human");
+  const totalLayers = objectTranslations.english.length;
   let currentLayer = null;
 
-  function showPopup(text) {
-    popup.textContent = text;
+  function toMorse(text) {
+    return text.toUpperCase().split('').map(c => morseMap[c] || c).join(' ');
+  }
+
+  function getTranslatedObject(index) {
+    const mode = modes[modeIndex];
+    const text = objectTranslations['english'][index];
+    if (mode === 'morse') return toMorse(text);
+    return objectTranslations[mode][index];
+  }
+
+  function updateCurrentObjectDisplay() {
+    const modeDisplayNames = {
+      morse: 'Morse Code',
+      english: 'English',
+      german: 'Deutsch',
+      french: 'Français',
+      spanish: 'Español'
+    };
+    const languageLabel = modeDisplayNames[modes[modeIndex]] || modes[modeIndex];
+    objectDisplay.textContent = `[${languageLabel}] ${getTranslatedObject(layerIndex)}`;
+  }
+
+  function updateHelpButtons() {
+    const aboutBtn = document.querySelector('.help-button:nth-child(1)');
+    const navigateBtn = document.querySelector('.help-button:nth-child(2)');
+    const mode = modes[modeIndex];
+    if (mode === 'morse') {
+      aboutBtn.innerHTML = toMorse(labelTranslations.english.about);
+      navigateBtn.innerHTML = toMorse(labelTranslations.english.navigate);
+    } else {
+      const labels = labelTranslations[mode] || labelTranslations.english;
+      aboutBtn.innerHTML = labels.about;
+      navigateBtn.innerHTML = labels.navigate;
+    }
+  }
+
+  function showPopup(html) {
+    popup.dataset.originalText = html;
+    popup.innerHTML = html;
+    popup.className = 'help-popup-base';
     popup.style.display = 'block';
   }
 
   function hidePopup() {
     popup.style.display = 'none';
+    popup.dataset.originalText = '';
   }
 
-  function getObjectName(index) {
-    return objectNames[index % objectNames.length];
-  }
-
-  function createLayer(name) {
-    const layer = document.createElement('div');
-    layer.className = 'layer';
-    layer.textContent = name;
-    return layer;
+  function createLayer(index) {
+    const div = document.createElement('div');
+    div.className = 'layer';
+    div.textContent = getTranslatedObject(index);
+    div.style.color = currentTheme.text;
+    return div;
   }
 
   function updateWarpCount(delta) {
-    netSteps += delta;
-    if (netSteps >= totalLayers) {
-      warpCount++;
-      netSteps = 0;
-    } else if (netSteps <= -totalLayers) {
-      warpCount--;
-      netSteps = 0;
-    }
-    warpDisplay.textContent = `Traverses: ${warpCount}`;
+    stepCount++;
+    traversalHistory += delta > 0 ? '+' : '_';
+    warpDisplay.textContent = `Traverses: ${stepCount}`;
+    traversalDisplay.textContent = traversalHistory;
+  }
+
+  function applyTheme(index) {
+    currentTheme = colorThemes[index % colorThemes.length];
+    document.body.style.backgroundColor = currentTheme.background;
+
+    container.querySelectorAll('.layer').forEach(el => {
+      el.style.color = currentTheme.text;
+    });
+
+    objectDisplay.style.color = currentTheme.text;
+    warpDisplay.style.color = currentTheme.text;
+
+    document.querySelectorAll('.help-button').forEach(btn => {
+      btn.style.backgroundColor = currentTheme.text;
+      btn.style.color = currentTheme.background;
+      btn.style.borderColor = 'transparent';
+
+      // Remove old listeners to avoid stacking
+      btn.removeEventListener('mouseover', btn._hoverIn);
+      btn.removeEventListener('mouseout', btn._hoverOut);
+
+      // Create new hover handlers
+      btn._hoverIn = () => {
+        btn.style.backgroundColor = invertColor(currentTheme.text);
+      };
+      btn._hoverOut = () => {
+        btn.style.backgroundColor = currentTheme.text;
+      };
+
+      btn.addEventListener('mouseover', btn._hoverIn);
+      btn.addEventListener('mouseout', btn._hoverOut);
+    });
+
+    popup.style.backgroundColor = currentTheme.text;
+    popup.style.color = currentTheme.background;
   }
 
   function updateLayer(delta) {
     updateWarpCount(delta);
     layerIndex = (layerIndex + delta + totalLayers) % totalLayers;
-
-    const scaleBase = 0.8;
-    const midIndex = Math.floor(totalLayers / 2);
-    const scale = Math.pow(scaleBase, midIndex - layerIndex);
+    const scale = Math.pow(0.8, Math.floor(totalLayers / 2) - layerIndex);
     container.style.transform = `scale(${scale})`;
-
-    const newLayer = createLayer(getObjectName(layerIndex));
+    const newLayer = createLayer(layerIndex);
     container.appendChild(newLayer);
     requestAnimationFrame(() => newLayer.classList.add('visible'));
-
-    if (currentLayer) {
-      currentLayer.classList.remove('visible');
-    }
-
+    if (currentLayer) currentLayer.classList.remove('visible');
     setTimeout(() => {
-      container.querySelectorAll('.layer').forEach(layer => {
-        if (!layer.classList.contains('visible')) {
-          container.removeChild(layer);
-        }
+      container.querySelectorAll('.layer').forEach(el => {
+        if (!el.classList.contains('visible')) el.remove();
       });
     }, 400);
-
     currentLayer = newLayer;
+
+    layersVisitedSinceLastCycle.add(layerIndex);
+    if (layersVisitedSinceLastCycle.size === totalLayers) {
+      themeCycleCount++;
+      applyTheme(themeCycleCount);
+      layersVisitedSinceLastCycle.clear();
+    }
+
+    updateCurrentObjectDisplay();
   }
 
-  // Initialize the first layer
-  currentLayer = createLayer(getObjectName(layerIndex));
+  // Initial setup
+  currentLayer = createLayer(layerIndex);
   container.appendChild(currentLayer);
   requestAnimationFrame(() => currentLayer.classList.add('visible'));
+  updateCurrentObjectDisplay();
+  updateHelpButtons();
+  applyTheme(0); // apply first theme on load
 
-  // User input handling
-  window.addEventListener('wheel', (e) => {
+  document.querySelector('.help-button:nth-child(1)').innerHTML = labelTranslations.english.about;
+  document.querySelector('.help-button:nth-child(2)').innerHTML = labelTranslations.english.navigate;
+
+  window.addEventListener('click', e => {
+    if (e.button !== 0) return;
+    traversalHistory += '/';
+    traversalDisplay.textContent = traversalHistory;
+    modeIndex = (modeIndex + 1) % modes.length;
+    updateCurrentObjectDisplay();
+    if (currentLayer) currentLayer.textContent = getTranslatedObject(layerIndex);
+    updateHelpButtons();
+    if (popup.dataset.originalText && popup.style.display === 'block') {
+      showPopup(popup.dataset.originalText);
+    }
+  });
+
+  window.addEventListener('wheel', e => {
     e.preventDefault();
     const delta = e.deltaY < 0 ? 1 : -1;
     updateLayer(delta);
   }, { passive: false });
 
-  window.addEventListener('keydown', (e) => {
+  window.addEventListener('keydown', e => {
     if (e.key === 'ArrowUp') updateLayer(1);
     if (e.key === 'ArrowDown') updateLayer(-1);
-  });
-
-  window.addEventListener('click', (e) => {
-    if (e.button !== 0) return;
-    mode = (mode === 'normal') ? 'morse' :
-           (mode === 'morse') ? 'braille' : 'normal';
-    if (currentLayer) {
-      currentLayer.textContent = getObjectName(layerIndex);
+    if (e.code === 'Space') {
+      e.preventDefault();
+      traversalDisplay.style.display = traversalDisplay.style.display === 'none' ? 'block' : 'none';
     }
   });
 </script>
+
 
 </body>
 </html>

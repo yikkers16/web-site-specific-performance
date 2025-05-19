@@ -101,7 +101,7 @@
 
     .help-popup-base {
       color: white;
-      user-select: none;
+      user-select: none;      
     }
 
     #warp-tracker {
@@ -120,6 +120,7 @@
       font-size: 14px;
       z-index: 10;
       background: #ffffff;
+      opacity: 75%;
       padding: 4px 8px;
       border-radius: 4px;
       user-select: none;
@@ -142,6 +143,12 @@
       overflow-wrap: break-word;
       word-break: break-word;
       max-width: 85vw;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    #traversal-history-display::-webkit-scrollbar {
+      display: none;
     }
   </style>
 </head>
@@ -292,9 +299,10 @@
 
   function updateWarpCount(delta) {
     stepCount++;
-    traversalHistory += delta > 0 ? '+' : '_';
+    traversalHistory += delta > 0 ? '@~' : '_-';
     warpDisplay.textContent = `Traverses: ${stepCount}`;
     traversalDisplay.textContent = traversalHistory;
+    traversalDisplay.scrollTop = traversalDisplay.scrollHeight;
   }
 
   function applyTheme(index) {
@@ -307,6 +315,8 @@
 
     objectDisplay.style.color = currentTheme.text;
     warpDisplay.style.color = currentTheme.text;
+
+    traversalDisplay.style.color = invertColor(currentTheme.text);
 
     document.querySelectorAll('.help-button').forEach(btn => {
       btn.style.backgroundColor = currentTheme.text;
@@ -372,8 +382,9 @@
 
   window.addEventListener('click', e => {
     if (e.button !== 0) return;
-    traversalHistory += '/';
+    traversalHistory += '&.&';
     traversalDisplay.textContent = traversalHistory;
+    traversalDisplay.scrollTop = traversalDisplay.scrollHeight;
     modeIndex = (modeIndex + 1) % modes.length;
     updateCurrentObjectDisplay();
     if (currentLayer) currentLayer.textContent = getTranslatedObject(layerIndex);

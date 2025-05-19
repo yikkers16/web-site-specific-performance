@@ -120,7 +120,7 @@ function createLayer(index) {
 
 function updateWarpCount(delta) {
     stepCount++;
-    traversalHistory += delta > 0 ? '@~' : '_-';
+    traversalHistory += delta > 0 ? '#~' : '_-';
     warpDisplay.textContent = `Traverses: ${stepCount}`;
     traversalDisplay.textContent = traversalHistory;
     traversalDisplay.scrollTop = traversalDisplay.scrollHeight;
